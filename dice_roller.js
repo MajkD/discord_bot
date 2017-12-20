@@ -1,5 +1,7 @@
 DiceRoller = function() {
 
+  this.number_markups = [":zero:", ":one:", ":two:", ":three:", ":four:", ":five:", ":six:", ":seven:", ":eight:", ":nine:"];
+
   DiceRoller.prototype.roll = function(msg, onError, onDiceRolled) {
     this.onError = onError;
     this.onDiceRolled = onDiceRolled;
@@ -25,18 +27,30 @@ DiceRoller = function() {
     this.roll_dice(numDice, diceValue);
   };
 
+  DiceRoller.prototype.check_critical = function(message, numDice, diceValue, sum) {
+    if(numDice == 1 && diceValue == 100 && sum == 1) {
+      return message + "  Yay critical!! :fire:"
+    }
+    if(numDice == 1 && diceValue == 100 && sum == 100) {
+      return message + "  Botch!! :poop:"
+    }
+    return message;
+  }
+
   DiceRoller.prototype.roll_dice = function(numDice, diceValue) {
     var title = this.msg.author.username + " rolled: " + numDice + "D" + diceValue;
-    var message = ":five: + :four: = 9";
     var composedMesage = "";
     var sum = 0;
-    for(index = 0; index < numDice; index++) {
+    for(var diceIndex = 0; diceIndex < numDice; diceIndex++) {
       var randomNumber = Math.floor(Math.random() * diceValue) + 1;
       sum += randomNumber;
       composedMesage = composedMesage + this.get_number_markup(randomNumber) + " + ";
     }
     composedMesage = composedMesage.slice(0, -2);
     composedMesage = composedMesage + " = " + sum
+
+    composedMesage = this.check_critical(composedMesage, numDice, diceValue, sum);
+
     var result = { 
       title: title,
       message: composedMesage,
@@ -45,41 +59,13 @@ DiceRoller = function() {
   }
 
   DiceRoller.prototype.get_number_markup = function(number) {
-    switch(number) {
-      case 1:
-        return ":one:";
-        break;
-      case 2:
-        return ":two:";
-        break;
-      case 3:
-        return ":three:";
-        break;
-      case 4:
-        return ":four:";
-        break;
-      case 5:
-        return ":five:";
-        break;
-      case 6:
-        return ":six:";
-        break;
-      case 7:
-        return ":seven:";
-        break;
-      case 8:
-        return ":eight:";
-        break;
-      case 9:
-        return ":nine:";
-        break;
-      case 0:
-        return ":zero:";
-        break;
-      default:
-        return "";
-        break;
-      }
+    var output = "";
+    var digits = number.toString();
+    for(digitIndex = 0; digitIndex < digits.length; digitIndex++){
+      var num = parseInt(digits[digitIndex]);
+      output = output + this.number_markups[num];
+    }
+    return output;
   }
 
   DiceRoller.prototype.check_err_numerical = function(numDice, diceValue) {
