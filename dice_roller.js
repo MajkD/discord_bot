@@ -1,31 +1,113 @@
 DiceRoller = function() {
 
-  DiceRoller.prototype.parse_message = function(message, sender) {
+  DiceRoller.prototype.roll = function(msg, onError, onDiceRolled) {
+    this.onError = onError;
+    this.onDiceRolled = onDiceRolled;
+    this.msg = msg;
+
+    var message = msg.content;
     var message = message.substr(1).slice(0, -1);
     var vals = message.split("D");
     var numDice = vals[0];
     var diceValue = vals[1];
 
-    if (this.contains_forbidden_chars(numDice) || this.contains_forbidden_chars(diceValue)) {
-      return this.error("numeric",  numDice + " and " + diceValue);
+    if(this.check_err_numerical(numDice, diceValue)) {
+      return;
     }
 
     numDice = parseInt(numDice);
     diceValue = parseInt(diceValue);
 
+    if(this.check_err_values(numDice, diceValue)) {
+      return;
+    }
+
+    this.roll_dice(numDice, diceValue);
+  };
+
+  DiceRoller.prototype.roll_dice = function(numDice, diceValue) {
+    var title = this.msg.author.username + " rolled: " + numDice + "D" + diceValue;
+    var message = ":five: + :four: = 9";
+    var composedMesage = "";
+    var sum = 0;
+    for(index = 0; index < numDice; index++) {
+      var randomNumber = Math.floor(Math.random() * diceValue) + 1;
+      sum += randomNumber;
+      composedMesage = composedMesage + this.get_number_markup(randomNumber) + " + ";
+    }
+    composedMesage = composedMesage.slice(0, -2);
+    composedMesage = composedMesage + " = " + sum
+    var result = { 
+      title: title,
+      message: composedMesage,
+    }
+    this.onDiceRolled(this.msg, result);
+  }
+
+  DiceRoller.prototype.get_number_markup = function(number) {
+    switch(number) {
+      case 1:
+        return ":one:";
+        break;
+      case 2:
+        return ":two:";
+        break;
+      case 3:
+        return ":three:";
+        break;
+      case 4:
+        return ":four:";
+        break;
+      case 5:
+        return ":five:";
+        break;
+      case 6:
+        return ":six:";
+        break;
+      case 7:
+        return ":seven:";
+        break;
+      case 8:
+        return ":eight:";
+        break;
+      case 9:
+        return ":nine:";
+        break;
+      case 0:
+        return ":zero:";
+        break;
+      default:
+        return "";
+        break;
+      }
+  }
+
+  DiceRoller.prototype.check_err_numerical = function(numDice, diceValue) {
+    if(numDice == undefined || diceValue == undefined) {
+      this.onError(this.msg, "Invalid values entered Format should be eg. :2D6:");
+      return true;
+    }
+
+    if (this.contains_forbidden_chars(numDice) || this.contains_forbidden_chars(diceValue)) {
+      var errorMsg = "You entered: " + numDice + " and " + diceValue + ", Please enter only numerical values"
+      this.onError(this.msg, errorMsg);
+      return true;
+    }
+  }
+
+  DiceRoller.prototype.check_err_values = function(numDice, diceValue) {
     if (!this.validate_dice_number(numDice)) {
-      return this.error("dice_num", numDice);
+      var errrMsg = "Invalid number of dice: " + numDice + " (min: 1 max: 20)"
+      this.onError(this.msg, errrMsg);
+      return true;
     }
 
     if (!this.validate_dice_value(diceValue)) {
-      return this.error("dice_val", diceValue);
+      var errrMsg = "Invalid dice value: " + diceValue + " (2, 4, 6, 8, 10, 12, 20, 100)"
+      this.onError(this.msg, errrMsg);
+      return true;
     }
-
-    return sender + "rolled: " + numDice + " D " + diceValue;
-  };
-
-  // Send error messages only to roller
-  // TODO Implement proper reply
+  }
 
   DiceRoller.prototype.validate_dice_number = function(numDice) {
     return numDice > 0 && numDice <= 20;
@@ -45,20 +127,6 @@ DiceRoller = function() {
     }
     return false;
   }
-
-  DiceRoller.prototype.error = function(type, value) {
-    if (type == "numeric") {
-      return "You entered: " + value + ", Please enter only numerical values"  
-    }
-    if (type == "dice_num") {
-      return "Invalid number of dice: " + value + " (min: 1 max: 20)"
-    }
-    if (type == "dice_val") {
-      return "Invalid dice value: " + value + " (2, 4, 6, 8, 10, 12, 20, 100)"
-    }
-    return "Ooops there was an error";
-  }
-
 }
 
 module.exports = DiceRoller;
